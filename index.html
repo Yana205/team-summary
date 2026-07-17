@@ -398,6 +398,183 @@
 
 </div>
 
+<h2><span class="n">7</span>Where We Are — Task Board</h2>
+
+<div class="callout">🗺️ <b>Miro board, current stage:</b> concept &amp; moodboard phase, converging fast. Art references locked around <b>hand-drawn cozy food</b> — street-food stalls, night-market carts, bento packaging, watercolor tanghulu, mochi and matcha. UI references from cozy mobile cooking games. First <b>three original characters</b> sketched: puppy · cat · red panda in aprons. Core experience: <i>"a girl sitting in a café in Kyoto, drawing the food in her watercolor diary"</i>. Mechanic direction: <b>tactile screen interactions</b> — pouring liquids, drawing with fingers, designing cups and plating food. Still open: relationships system, seasons/menu, shiny water shaders.</div>
+
+<style>
+  .kb-board{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+  @media(max-width:860px){.kb-board{grid-template-columns:1fr}}
+  .kb-col{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:100px;transition:.15s}
+  .kb-col.drag-over{background:var(--card2);border-color:var(--accent)}
+  .kb-col-head{display:flex;align-items:center;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--line);font-size:13px;text-transform:uppercase;letter-spacing:1px}
+  .kb-col[data-col="done"] .kb-col-head{color:var(--green)}
+  .kb-col[data-col="doing"] .kb-col-head{color:var(--accent2)}
+  .kb-col[data-col="todo"] .kb-col-head{color:var(--accent)}
+  .kb-count{margin-left:auto;background:var(--card2);border:1px solid var(--line);color:var(--muted);font-size:11px;padding:1px 8px;border-radius:10px}
+  .kb-card{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px 12px 10px;font-size:13px;cursor:grab;position:relative;transition:box-shadow .15s,opacity .15s;user-select:none}
+  .kb-card:active{cursor:grabbing}
+  .kb-card.dragging{opacity:.35;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+  .kb-col[data-col="done"] .kb-card{border-left:3px solid var(--green)}
+  .kb-col[data-col="doing"] .kb-card{border-left:3px solid var(--accent2)}
+  .kb-col[data-col="todo"] .kb-card{border-left:3px solid var(--accent)}
+  .kb-card b{display:block;font-size:13.5px;margin-bottom:3px;padding-right:22px;line-height:1.35}
+  .kb-card p{color:var(--muted);font-size:12px;line-height:1.45}
+  .kb-owner{display:inline-block;margin-top:6px;font-size:10.5px;font-weight:700;color:#fff;padding:1px 8px;border-radius:10px;margin-right:3px}
+  .kb-owner.o-yana{background:var(--accent)}
+  .kb-owner.o-noa{background:#d9679b}
+  .kb-owner.o-lital{background:#2f9e8f}
+  .kb-owner.o-other{background:#666}
+  .kb-del{position:absolute;top:7px;right:7px;background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;line-height:1;padding:2px 5px;border-radius:4px;opacity:.5}
+  .kb-del:hover{color:#f87171;background:rgba(248,113,113,.1);opacity:1}
+  .kb-add-btn{background:none;border:1px dashed var(--line);border-radius:8px;color:var(--muted);font-size:12px;padding:7px;cursor:pointer;text-align:center;transition:.15s;width:100%}
+  .kb-add-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .kb-form{display:flex;flex-direction:column;gap:6px}
+  .kb-form input,.kb-form textarea{background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:12px;padding:6px 9px;width:100%;outline:none;font-family:inherit;resize:none}
+  .kb-form input:focus,.kb-form textarea:focus{border-color:var(--accent)}
+  .kb-form-btns{display:flex;gap:6px}
+  .kb-form-btns button{flex:1;padding:6px;border-radius:7px;font-size:12px;cursor:pointer;border:none;font-family:inherit}
+  .kb-form-btns .kb-fsave{background:var(--accent);color:#fff}
+  .kb-form-btns .kb-fcancel{background:var(--card);border:1px solid var(--line);color:var(--muted)}
+  .kb-meta{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+  .kb-saved{font-size:11px;color:var(--muted)}
+  .kb-reset{background:none;border:1px solid var(--line);color:var(--muted);font-size:11px;border-radius:8px;padding:3px 10px;cursor:pointer}
+  .kb-reset:hover{color:var(--text);border-color:var(--accent)}
+  .roles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+  @media(max-width:720px){.roles{grid-template-columns:1fr}}
+  .role-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:12.5px;color:var(--muted)}
+  .role-card b{display:block;color:var(--text);font-size:14px;margin-bottom:3px}
+</style>
+
+<div class="kb-board" id="kbBoard"></div>
+<div class="kb-meta">
+  <span class="kb-saved" id="kbSaved"></span>
+  <button class="kb-reset" id="kbReset">Reset to defaults</button>
+</div>
+
+<div class="roles" style="margin-top:18px">
+  <div class="role-card"><b>Yana</b><span class="tag">software</span><span class="tag">tech art</span><span class="tag">mechanic</span><span class="tag">assist. level design</span></div>
+  <div class="role-card"><b>Noa</b><span class="tag">assets</span><span class="tag">level design</span><span class="tag">animations</span></div>
+  <div class="role-card"><b>Lital</b><span class="tag">tech art</span><span class="tag">TextMesh Pro</span><span class="tag">sound</span></div>
+</div>
+<p class="note">Board source: team Miro · snapshot July 17, 2026 · changes saved in your browser · drag cards between columns to move them</p>
+
+<script>
+(function(){
+  var COLS=[{id:'done',label:'✅ Done'},{id:'doing',label:'🔄 In Progress'},{id:'todo',label:'⬜ To Do'}];
+  var DEFAULTS={
+    done:[
+      {id:'d1',title:'Reference screens in Miro',desc:'Cozy food-game UI + watercolor food art + night-market vibes, collected and clustered.'},
+      {id:'d2',title:'First character sketches',desc:'Puppy, cat and red panda in aprons — blue-pencil concepts on the board.'},
+      {id:'d3',title:'Roles drafted',desc:'Yana / Noa / Lital split agreed.'}
+    ],
+    doing:[
+      {id:'di1',title:'Mechanic research',desc:'Pouring liquids, drawing with fingers, serving food — soft & slow, hand-drawn particles.',owner:'Yana'},
+      {id:'di2',title:'Art direction',desc:'Hand-drawn + shiny, "packages / ready-to-eat" vibe · matcha latte × sakura theme.',owner:'Noa'},
+      {id:'di3',title:'Cozy→stress environment bar',desc:'A vibe meter that shifts the environment from cozy to stressed — define how it reads on screen.'}
+    ],
+    todo:[
+      {id:'t1',title:'One pager',desc:'POV-driven, personality first — not "Falafel King". Lead with the experience, not the genre.'},
+      {id:'t2',title:'Pitch',desc:'Build from the one pager: playable mechanic + one strong visual identity.'},
+      {id:'t3',title:'Fonts',desc:'Pick title + UI fonts, TextMesh Pro-ready.',owner:'Lital'},
+      {id:'t4',title:'Talk to Lital + Hili',desc:'Sync on joining / roles.'},
+      {id:'t5',title:'Reach out to Tal Rozenberg',desc:'Advice on level design & mechanics — she\'s across our strongest references.'}
+    ]
+  };
+  var KEY='candihub_kanban_v1';
+  var state,dragId,dragCol;
+
+  function load(){try{var s=localStorage.getItem(KEY);if(s)return JSON.parse(s);}catch(e){}return JSON.parse(JSON.stringify(DEFAULTS));}
+  function save(){localStorage.setItem(KEY,JSON.stringify(state));var el=document.getElementById('kbSaved');if(el)el.textContent='Saved '+new Date().toLocaleTimeString();}
+  function uid(){return Math.random().toString(36).slice(2,9);}
+  function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  function ownerClass(o){var m={'yana':'o-yana','noa':'o-noa','lital':'o-lital'};return m[(o||'').toLowerCase()]||'o-other';}
+
+  function render(){
+    var board=document.getElementById('kbBoard');
+    board.innerHTML='';
+    COLS.forEach(function(col){
+      var cards=state[col.id]||[];
+      var colEl=document.createElement('div');
+      colEl.className='kb-col';colEl.dataset.col=col.id;
+      colEl.innerHTML='<div class="kb-col-head">'+col.label+'<span class="kb-count">'+cards.length+'</span></div>';
+
+      cards.forEach(function(card){
+        var el=document.createElement('div');
+        el.className='kb-card';el.draggable=true;el.dataset.id=card.id;el.dataset.col=col.id;
+        el.innerHTML='<button class="kb-del" title="Delete">×</button>'
+          +'<b>'+esc(card.title)+'</b>'
+          +(card.desc?'<p>'+esc(card.desc)+'</p>':'')
+          +(card.owner?'<span class="kb-owner '+ownerClass(card.owner)+'">'+esc(card.owner)+'</span>':'');
+        el.querySelector('.kb-del').onclick=function(e){
+          e.stopPropagation();
+          state[col.id]=state[col.id].filter(function(c){return c.id!==card.id;});
+          save();render();
+        };
+        el.ondragstart=function(e){
+          dragId=card.id;dragCol=col.id;
+          setTimeout(function(){el.classList.add('dragging');},0);
+          e.dataTransfer.effectAllowed='move';
+        };
+        el.ondragend=function(){
+          el.classList.remove('dragging');
+          document.querySelectorAll('.kb-col').forEach(function(c){c.classList.remove('drag-over');});
+        };
+        colEl.appendChild(el);
+      });
+
+      // drop zone
+      colEl.ondragover=function(e){e.preventDefault();colEl.classList.add('drag-over');};
+      colEl.ondragleave=function(e){if(!colEl.contains(e.relatedTarget))colEl.classList.remove('drag-over');};
+      colEl.ondrop=function(e){
+        e.preventDefault();colEl.classList.remove('drag-over');
+        if(!dragId||dragCol===col.id)return;
+        var idx=state[dragCol].findIndex(function(c){return c.id===dragId;});
+        if(idx===-1)return;
+        var moved=state[dragCol].splice(idx,1)[0];
+        state[col.id].push(moved);
+        dragId=null;dragCol=null;
+        save();render();
+      };
+
+      // add button
+      var addWrap=document.createElement('div');
+      var btn=document.createElement('button');
+      btn.className='kb-add-btn';btn.textContent='+ Add task';
+      btn.onclick=function(){showForm(col.id,addWrap);};
+      addWrap.appendChild(btn);
+      colEl.appendChild(addWrap);
+      board.appendChild(colEl);
+    });
+  }
+
+  function showForm(colId,wrap){
+    var tid='kbt'+colId,did='kbd'+colId,oid='kbo'+colId;
+    wrap.innerHTML='<div class="kb-form">'
+      +'<input id="'+tid+'" type="text" placeholder="Task title" maxlength="80">'
+      +'<textarea id="'+did+'" placeholder="Details (optional)" rows="2"></textarea>'
+      +'<input id="'+oid+'" type="text" placeholder="Owner — Yana / Noa / Lital" maxlength="30">'
+      +'<div class="kb-form-btns"><button class="kb-fsave">Add</button><button class="kb-fcancel">Cancel</button></div>'
+      +'</div>';
+    wrap.querySelector('.kb-fsave').onclick=function(){
+      var title=document.getElementById(tid).value.trim();
+      if(!title)return;
+      state[colId].push({id:uid(),title:title,desc:document.getElementById(did).value.trim(),owner:document.getElementById(oid).value.trim()});
+      save();render();
+    };
+    wrap.querySelector('.kb-fcancel').onclick=render;
+    document.getElementById(tid).focus();
+  }
+
+  document.getElementById('kbReset').onclick=function(){
+    if(confirm('Reset board to defaults? Your changes will be lost.'))
+      {state=JSON.parse(JSON.stringify(DEFAULTS));save();render();}
+  };
+
+  state=load();render();
+})();
+</script>
+
 <h2><span class="n">5</span>Questions for Today</h2>
 <ol class="qs centered-list">
   <li><b>Team:</b> who are our 2–4, covering art, design and code?</li>
