@@ -446,50 +446,148 @@
   .role-card b{display:block;color:var(--text);font-size:14px;margin-bottom:3px}
 </style>
 
-<div class="kb-board" id="kbBoard"></div>
-<div class="kb-meta">
-  <span class="kb-saved" id="kbSaved"></span>
-  <button class="kb-reset" id="kbReset">Reset to defaults</button>
+<!-- kanban toolbar -->
+<style>
+  .kb-toolbar{display:flex;align-items:center;gap:8px;margin-top:16px;flex-wrap:wrap}
+  .kb-toolbar button{background:var(--card);border:1px solid var(--line);color:var(--text);font-size:12px;padding:5px 12px;border-radius:8px;cursor:pointer;font-family:inherit;transition:.15s}
+  .kb-toolbar button:hover{border-color:var(--accent);color:var(--accent)}
+  .kb-toolbar .kb-push{background:var(--accent);border-color:var(--accent);color:#fff}
+  .kb-toolbar .kb-push:hover{background:#7c4dea;color:#fff}
+  .kb-toolbar .kb-status{font-size:11px;color:var(--muted);margin-left:4px}
+  /* token modal */
+  .kb-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:999;display:flex;align-items:center;justify-content:center}
+  .kb-modal{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px 28px;width:min(480px,90vw);font-size:13px}
+  .kb-modal h3{font-size:16px;margin-bottom:8px}
+  .kb-modal p{color:var(--muted);font-size:12.5px;margin-bottom:14px;line-height:1.5}
+  .kb-modal input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:13px;padding:8px 10px;outline:none;font-family:inherit;margin-bottom:10px}
+  .kb-modal input:focus{border-color:var(--accent)}
+  .kb-modal-btns{display:flex;gap:8px}
+  .kb-modal-btns button{flex:1;padding:7px;border-radius:8px;font-size:13px;cursor:pointer;border:none;font-family:inherit}
+  .kb-modal-btns .kb-mok{background:var(--accent);color:#fff}
+  .kb-modal-btns .kb-mcancel{background:var(--card2);color:var(--muted);border:1px solid var(--line)}
+  /* editable card fields */
+  .kb-card .kb-title-view{cursor:text;font-size:13.5px;font-weight:700;line-height:1.35;padding-right:22px;margin-bottom:3px}
+  .kb-card .kb-desc-view{color:var(--muted);font-size:12px;line-height:1.45;cursor:text}
+  .kb-card .kb-title-view:hover,.kb-card .kb-desc-view:hover{background:rgba(139,92,246,.08);border-radius:4px}
+  .kb-card input.kb-edit-input,.kb-card textarea.kb-edit-input{
+    background:var(--bg);border:1px solid var(--accent);border-radius:6px;
+    color:var(--text);font-size:12.5px;padding:4px 6px;width:100%;outline:none;
+    font-family:inherit;resize:none;margin-bottom:3px;display:block}
+  .kb-card .kb-owner-wrap{margin-top:6px;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+  .kb-card .kb-owner-edit{background:none;border:none;border-bottom:1px dashed var(--muted);color:var(--muted);font-size:10.5px;cursor:text;padding:1px 3px;font-family:inherit;width:80px}
+</style>
+
+<div class="kb-toolbar">
+  <button id="kbPull">↓ Pull latest</button>
+  <button class="kb-push" id="kbPush">↑ Push changes</button>
+  <button id="kbToken">🔑 Token</button>
+  <button id="kbReset">Reset</button>
+  <span class="kb-status" id="kbSaved"></span>
 </div>
+<div class="kb-board" id="kbBoard"></div>
 
 <div class="roles" style="margin-top:18px">
   <div class="role-card"><b>Yana</b><span class="tag">software</span><span class="tag">tech art</span><span class="tag">mechanic</span><span class="tag">assist. level design</span></div>
   <div class="role-card"><b>Noa</b><span class="tag">assets</span><span class="tag">level design</span><span class="tag">animations</span></div>
   <div class="role-card"><b>Lital</b><span class="tag">tech art</span><span class="tag">TextMesh Pro</span><span class="tag">sound</span></div>
 </div>
-<p class="note">Board source: team Miro · snapshot July 17, 2026 · changes saved in your browser · drag cards between columns to move them</p>
+<p class="note">Click any card title or description to edit · drag to move between columns · Push syncs to the shared repo file · Pull fetches latest from the repo</p>
 
 <script>
 (function(){
-  var COLS=[{id:'done',label:'✅ Done'},{id:'doing',label:'🔄 In Progress'},{id:'todo',label:'⬜ To Do'}];
-  var DEFAULTS={
-    done:[
-      {id:'d1',title:'Reference screens in Miro',desc:'Cozy food-game UI + watercolor food art + night-market vibes, collected and clustered.'},
-      {id:'d2',title:'First character sketches',desc:'Puppy, cat and red panda in aprons — blue-pencil concepts on the board.'},
-      {id:'d3',title:'Roles drafted',desc:'Yana / Noa / Lital split agreed.'}
-    ],
-    doing:[
-      {id:'di1',title:'Mechanic research',desc:'Pouring liquids, drawing with fingers, serving food — soft & slow, hand-drawn particles.',owner:'Yana'},
-      {id:'di2',title:'Art direction',desc:'Hand-drawn + shiny, "packages / ready-to-eat" vibe · matcha latte × sakura theme.',owner:'Noa'},
-      {id:'di3',title:'Cozy→stress environment bar',desc:'A vibe meter that shifts the environment from cozy to stressed — define how it reads on screen.'}
-    ],
-    todo:[
-      {id:'t1',title:'One pager',desc:'POV-driven, personality first — not "Falafel King". Lead with the experience, not the genre.'},
-      {id:'t2',title:'Pitch',desc:'Build from the one pager: playable mechanic + one strong visual identity.'},
-      {id:'t3',title:'Fonts',desc:'Pick title + UI fonts, TextMesh Pro-ready.',owner:'Lital'},
-      {id:'t4',title:'Talk to Lital + Hili',desc:'Sync on joining / roles.'},
-      {id:'t5',title:'Reach out to Tal Rozenberg',desc:'Advice on level design & mechanics — she\'s across our strongest references.'}
-    ]
-  };
-  var KEY='candihub_kanban_v1';
-  var state,dragId,dragCol;
+  var REPO='Yana205/team-summary';
+  var FILE='kanban-data.json';
+  var RAW='https://raw.githubusercontent.com/'+REPO+'/main/'+FILE;
+  var API='https://api.github.com/repos/'+REPO+'/contents/'+FILE;
+  var LS_STATE='candihub_kanban_v2';
+  var LS_TOKEN='kb_gh_token';
+  var LS_SHA='kb_gh_sha';
 
-  function load(){try{var s=localStorage.getItem(KEY);if(s)return JSON.parse(s);}catch(e){}return JSON.parse(JSON.stringify(DEFAULTS));}
-  function save(){localStorage.setItem(KEY,JSON.stringify(state));var el=document.getElementById('kbSaved');if(el)el.textContent='Saved '+new Date().toLocaleTimeString();}
+  var COLS=[{id:'done',label:'✅ Done'},{id:'doing',label:'🔄 In Progress'},{id:'todo',label:'⬜ To Do'}];
+  var state,dragId,dragFromCol;
+
+  // ── helpers ──────────────────────────────────────────
   function uid(){return Math.random().toString(36).slice(2,9);}
   function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-  function ownerClass(o){var m={'yana':'o-yana','noa':'o-noa','lital':'o-lital'};return m[(o||'').toLowerCase()]||'o-other';}
+  function ownerCls(o){return({'yana':'o-yana','noa':'o-noa','lital':'o-lital'})[(o||'').toLowerCase()]||'o-other';}
+  function status(msg,err){var el=document.getElementById('kbSaved');if(el){el.textContent=msg;el.style.color=err?'#f87171':'var(--muted)';}}
+  function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+  function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
 
+  function localSave(){
+    lsSet(LS_STATE,JSON.stringify(state));
+    status('Local changes — not yet pushed');
+  }
+
+  // ── GitHub sync ───────────────────────────────────────
+  async function ghPull(){
+    status('Pulling…');
+    try{
+      var r=await fetch(RAW+'?t='+Date.now());
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      var data=await r.json();
+      state=data;
+      lsSet(LS_STATE,JSON.stringify(state));
+      // also grab sha for push
+      var meta=await fetch(API,{headers:{'Accept':'application/vnd.github+json'}});
+      if(meta.ok){var mj=await meta.json();lsSet(LS_SHA,mj.sha);}
+      status('Pulled · '+new Date().toLocaleTimeString());
+      render();
+    }catch(e){status('Pull failed: '+e.message,true);}
+  }
+
+  async function ghPush(){
+    var token=lsGet(LS_TOKEN);
+    if(!token){showTokenModal(ghPush);return;}
+    status('Pushing…');
+    try{
+      // get current sha
+      var meta=await fetch(API,{headers:{'Authorization':'token '+token,'Accept':'application/vnd.github+json'}});
+      if(!meta.ok) throw new Error('Could not get file SHA — check token scope (needs repo or public_repo)');
+      var mj=await meta.json();
+      var sha=mj.sha;
+      lsSet(LS_SHA,sha);
+      // push
+      var content=btoa(unescape(encodeURIComponent(JSON.stringify(state,null,2))));
+      var res=await fetch(API,{
+        method:'PUT',
+        headers:{'Authorization':'token '+token,'Content-Type':'application/json','Accept':'application/vnd.github+json'},
+        body:JSON.stringify({message:'Update kanban '+new Date().toISOString().slice(0,16),content:content,sha:sha})
+      });
+      if(!res.ok){var ej=await res.json();throw new Error(ej.message||res.status);}
+      status('Pushed ✓ · '+new Date().toLocaleTimeString());
+    }catch(e){status('Push failed: '+e.message,true);}
+  }
+
+  // ── token modal ───────────────────────────────────────
+  function showTokenModal(cb){
+    var existing=lsGet(LS_TOKEN)||'';
+    var bg=document.createElement('div');bg.className='kb-modal-bg';
+    bg.innerHTML='<div class="kb-modal">'
+      +'<h3>GitHub Personal Access Token</h3>'
+      +'<p>Needed to push changes to the shared repo file. Generate one at <a href="https://github.com/settings/tokens/new?scopes=public_repo&description=CandiHub+kanban" target="_blank">github.com/settings/tokens</a> with <b>public_repo</b> scope. Stored only in your browser.</p>'
+      +'<input id="kbTokInput" type="password" placeholder="ghp_…" value="'+esc(existing)+'">'
+      +'<div class="kb-modal-btns">'
+      +'<button class="kb-mok" id="kbTokSave">Save &amp; continue</button>'
+      +'<button class="kb-mcancel" id="kbTokCancel">Cancel</button>'
+      +(existing?'<button class="kb-mcancel" id="kbTokClear">Clear token</button>':'')
+      +'</div></div>';
+    document.body.appendChild(bg);
+    document.getElementById('kbTokSave').onclick=function(){
+      var t=document.getElementById('kbTokInput').value.trim();
+      if(!t)return;
+      lsSet(LS_TOKEN,t);
+      document.body.removeChild(bg);
+      if(cb)cb();
+    };
+    document.getElementById('kbTokCancel').onclick=function(){document.body.removeChild(bg);};
+    var clr=document.getElementById('kbTokClear');
+    if(clr)clr.onclick=function(){lsSet(LS_TOKEN,'');document.body.removeChild(bg);status('Token cleared');};
+    document.getElementById('kbTokInput').focus();
+    bg.onclick=function(e){if(e.target===bg)document.body.removeChild(bg);};
+  }
+
+  // ── render ────────────────────────────────────────────
   function render(){
     var board=document.getElementById('kbBoard');
     board.innerHTML='';
@@ -501,18 +599,55 @@
 
       cards.forEach(function(card){
         var el=document.createElement('div');
-        el.className='kb-card';el.draggable=true;el.dataset.id=card.id;el.dataset.col=col.id;
-        el.innerHTML='<button class="kb-del" title="Delete">×</button>'
-          +'<b>'+esc(card.title)+'</b>'
-          +(card.desc?'<p>'+esc(card.desc)+'</p>':'')
-          +(card.owner?'<span class="kb-owner '+ownerClass(card.owner)+'">'+esc(card.owner)+'</span>':'');
-        el.querySelector('.kb-del').onclick=function(e){
+        el.className='kb-card';el.draggable=true;
+
+        // title
+        var titleEl=document.createElement('div');
+        titleEl.className='kb-title-view';
+        titleEl.textContent=card.title||'';
+        titleEl.title='Click to edit';
+        titleEl.onclick=function(){editField(el,card,col.id,'title',titleEl);};
+
+        // desc
+        var descEl=document.createElement('div');
+        descEl.className='kb-desc-view';
+        descEl.textContent=card.desc||'';
+        descEl.title='Click to edit';
+        if(!card.desc)descEl.style.display='none';
+        descEl.onclick=function(){editField(el,card,col.id,'desc',descEl);};
+
+        // owner
+        var ownerWrap=document.createElement('div');ownerWrap.className='kb-owner-wrap';
+        if(card.owner){
+          var badge=document.createElement('span');
+          badge.className='kb-owner '+ownerCls(card.owner);
+          badge.textContent=card.owner;
+          badge.title='Click to change owner';
+          badge.onclick=function(){editOwner(el,card,col.id,ownerWrap);};
+          ownerWrap.appendChild(badge);
+        } else {
+          var addOwner=document.createElement('span');
+          addOwner.style.cssText='font-size:10.5px;color:var(--muted);cursor:pointer';
+          addOwner.textContent='+ owner';
+          addOwner.onclick=function(){editOwner(el,card,col.id,ownerWrap);};
+          ownerWrap.appendChild(addOwner);
+        }
+
+        // delete
+        var delBtn=document.createElement('button');
+        delBtn.className='kb-del';delBtn.title='Delete';delBtn.textContent='×';
+        delBtn.onclick=function(e){
           e.stopPropagation();
+          if(!confirm('Delete "'+card.title+'"?'))return;
           state[col.id]=state[col.id].filter(function(c){return c.id!==card.id;});
-          save();render();
+          localSave();render();
         };
+
+        el.appendChild(delBtn);el.appendChild(titleEl);el.appendChild(descEl);el.appendChild(ownerWrap);
+
+        // drag
         el.ondragstart=function(e){
-          dragId=card.id;dragCol=col.id;
+          dragId=card.id;dragFromCol=col.id;
           setTimeout(function(){el.classList.add('dragging');},0);
           e.dataTransfer.effectAllowed='move';
         };
@@ -523,55 +658,109 @@
         colEl.appendChild(el);
       });
 
-      // drop zone
+      // column drop
       colEl.ondragover=function(e){e.preventDefault();colEl.classList.add('drag-over');};
       colEl.ondragleave=function(e){if(!colEl.contains(e.relatedTarget))colEl.classList.remove('drag-over');};
       colEl.ondrop=function(e){
         e.preventDefault();colEl.classList.remove('drag-over');
-        if(!dragId||dragCol===col.id)return;
-        var idx=state[dragCol].findIndex(function(c){return c.id===dragId;});
+        if(!dragId||dragFromCol===col.id)return;
+        var idx=state[dragFromCol].findIndex(function(c){return c.id===dragId;});
         if(idx===-1)return;
-        var moved=state[dragCol].splice(idx,1)[0];
+        var moved=state[dragFromCol].splice(idx,1)[0];
         state[col.id].push(moved);
-        dragId=null;dragCol=null;
-        save();render();
+        dragId=null;dragFromCol=null;
+        localSave();render();
       };
 
-      // add button
+      // add card
       var addWrap=document.createElement('div');
-      var btn=document.createElement('button');
-      btn.className='kb-add-btn';btn.textContent='+ Add task';
-      btn.onclick=function(){showForm(col.id,addWrap);};
-      addWrap.appendChild(btn);
+      var addBtn=document.createElement('button');
+      addBtn.className='kb-add-btn';addBtn.textContent='+ Add task';
+      addBtn.onclick=function(){showAddForm(col.id,addWrap);};
+      addWrap.appendChild(addBtn);
       colEl.appendChild(addWrap);
       board.appendChild(colEl);
     });
   }
 
-  function showForm(colId,wrap){
-    var tid='kbt'+colId,did='kbd'+colId,oid='kbo'+colId;
+  // ── inline field edit ─────────────────────────────────
+  function editField(cardEl,card,colId,field,displayEl){
+    var isDesc=field==='desc';
+    var input=document.createElement(isDesc?'textarea':'input');
+    input.className='kb-edit-input';
+    input.value=card[field]||'';
+    if(isDesc){input.rows=2;}
+    input.placeholder=isDesc?'Details…':'Task title';
+    displayEl.replaceWith(input);
+    input.focus();
+    input.select();
+    function commit(){
+      var v=input.value.trim();
+      card[field]=v;
+      findAndUpdate(colId,card);
+      localSave();
+      // rebuild just this card's display
+      displayEl.textContent=v;
+      if(isDesc)displayEl.style.display=v?'':'none';
+      input.replaceWith(displayEl);
+    }
+    input.onblur=commit;
+    input.onkeydown=function(e){
+      if(!isDesc&&e.key==='Enter'){e.preventDefault();commit();}
+      if(e.key==='Escape'){input.replaceWith(displayEl);}
+    };
+  }
+
+  function editOwner(cardEl,card,colId,wrap){
+    var inp=document.createElement('input');
+    inp.className='kb-edit-input';inp.value=card.owner||'';inp.placeholder='Yana / Noa / Lital';
+    inp.style.cssText='width:110px;font-size:11px;padding:2px 5px;margin:0';
+    wrap.innerHTML='';wrap.appendChild(inp);inp.focus();
+    function commit(){
+      card.owner=inp.value.trim();
+      findAndUpdate(colId,card);
+      localSave();render();
+    }
+    inp.onblur=commit;
+    inp.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();commit();}};
+  }
+
+  function findAndUpdate(colId,card){
+    var idx=state[colId].findIndex(function(c){return c.id===card.id;});
+    if(idx!==-1)state[colId][idx]=card;
+  }
+
+  // ── add card form ─────────────────────────────────────
+  function showAddForm(colId,wrap){
     wrap.innerHTML='<div class="kb-form">'
-      +'<input id="'+tid+'" type="text" placeholder="Task title" maxlength="80">'
-      +'<textarea id="'+did+'" placeholder="Details (optional)" rows="2"></textarea>'
-      +'<input id="'+oid+'" type="text" placeholder="Owner — Yana / Noa / Lital" maxlength="30">'
+      +'<input id="kbt_'+colId+'" type="text" placeholder="Task title" maxlength="80">'
+      +'<textarea id="kbd_'+colId+'" placeholder="Details (optional)" rows="2"></textarea>'
+      +'<input id="kbo_'+colId+'" type="text" placeholder="Owner — Yana / Noa / Lital" maxlength="30">'
       +'<div class="kb-form-btns"><button class="kb-fsave">Add</button><button class="kb-fcancel">Cancel</button></div>'
       +'</div>';
     wrap.querySelector('.kb-fsave').onclick=function(){
-      var title=document.getElementById(tid).value.trim();
-      if(!title)return;
-      state[colId].push({id:uid(),title:title,desc:document.getElementById(did).value.trim(),owner:document.getElementById(oid).value.trim()});
-      save();render();
+      var t=document.getElementById('kbt_'+colId).value.trim();if(!t)return;
+      state[colId].push({id:uid(),title:t,desc:document.getElementById('kbd_'+colId).value.trim(),owner:document.getElementById('kbo_'+colId).value.trim()});
+      localSave();render();
     };
     wrap.querySelector('.kb-fcancel').onclick=render;
-    document.getElementById(tid).focus();
+    document.getElementById('kbt_'+colId).focus();
   }
 
+  // ── init ──────────────────────────────────────────────
+  var saved=lsGet(LS_STATE);
+  state=saved?JSON.parse(saved):null;
+
+  document.getElementById('kbPull').onclick=ghPull;
+  document.getElementById('kbPush').onclick=ghPush;
+  document.getElementById('kbToken').onclick=function(){showTokenModal(null);};
   document.getElementById('kbReset').onclick=function(){
-    if(confirm('Reset board to defaults? Your changes will be lost.'))
-      {state=JSON.parse(JSON.stringify(DEFAULTS));save();render();}
+    if(confirm('Reset to defaults? Local changes will be lost.'))
+      {state={done:[{id:'d1',title:'Reference screens in Miro',desc:'Cozy food-game UI + watercolor food art + night-market vibes.',},{id:'d2',title:'First character sketches',desc:'Puppy, cat and red panda in aprons.'},{id:'d3',title:'Roles drafted',desc:'Yana / Noa / Lital split agreed.'}],doing:[{id:'di1',title:'Mechanic research',desc:'Pouring liquids, drawing with fingers.',owner:'Yana'},{id:'di2',title:'Art direction',desc:'Hand-drawn + shiny, packages vibe.',owner:'Noa'},{id:'di3',title:'Cozy to stress bar',desc:'Vibe meter that shifts the environment.'}],todo:[{id:'t1',title:'One pager',desc:'POV-driven, personality first.'},{id:'t2',title:'Pitch',desc:'Playable mechanic + one strong visual identity.'},{id:'t3',title:'Fonts',desc:'TextMesh Pro-ready.',owner:'Lital'},{id:'t4',title:'Talk to Lital + Hili',desc:'Sync on joining / roles.'},{id:'t5',title:'Reach out to Tal Rozenberg',desc:'Advice on level design & mechanics.'}]};localSave();render();}
   };
 
-  state=load();render();
+  if(state){render();status('Loaded from local cache — Pull to get latest');}
+  else{ghPull();}
 })();
 </script>
 
