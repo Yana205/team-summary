@@ -510,53 +510,75 @@
   function uid(){return Math.random().toString(36).slice(2,9);}
   function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
   function ownerCls(o){return({'yana':'o-yana','noa':'o-noa','lital':'o-lital'})[(o||'').toLowerCase()]||'o-other';}
-  function status(msg,err){var el=document.getElementById('kbSaved');if(el){el.textContent=msg;el.style.color=err?'#f87171':'var(--muted)';}}
+  function status(msg,level){var el=document.getElementById('kbSaved');if(el){el.textContent=msg;el.style.color=level==='err'?'#f87171':level==='warn'?'#f59e0b':'var(--green)';}}
   function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
   function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
 
   function localSave(){
     lsSet(LS_STATE,JSON.stringify(state));
-    status('Local changes — not yet pushed');
+    status('Unsaved local changes — click ↑ Push to share','warn');
   }
+
+  // reliable UTF-8 → base64
+  function toB64(str){
+    var bytes=new TextEncoder().encode(str);
+    var bin=Array.from(bytes,function(b){return String.fromCharCode(b);}).join('');
+    return btoa(bin);
+  }
+
+  function authHdr(token){return 'Bearer '+token;}
 
   // ── GitHub sync ───────────────────────────────────────
   async function ghPull(){
-    status('Pulling…');
+    status('Pulling from GitHub…');
     try{
       var r=await fetch(RAW+'?t='+Date.now());
       if(!r.ok) throw new Error('HTTP '+r.status);
       var data=await r.json();
       state=data;
       lsSet(LS_STATE,JSON.stringify(state));
-      // also grab sha for push
       var meta=await fetch(API,{headers:{'Accept':'application/vnd.github+json'}});
       if(meta.ok){var mj=await meta.json();lsSet(LS_SHA,mj.sha);}
-      status('Pulled · '+new Date().toLocaleTimeString());
+      status('Pulled ✓  '+new Date().toLocaleTimeString());
       render();
-    }catch(e){status('Pull failed: '+e.message,true);}
+    }catch(e){
+      console.error('Pull error',e);
+      status('Pull failed: '+e.message,'err');
+    }
   }
 
   async function ghPush(){
     var token=lsGet(LS_TOKEN);
     if(!token){showTokenModal(ghPush);return;}
-    status('Pushing…');
+    status('Pushing to GitHub…');
     try{
-      // get current sha
-      var meta=await fetch(API,{headers:{'Authorization':'token '+token,'Accept':'application/vnd.github+json'}});
-      if(!meta.ok) throw new Error('Could not get file SHA — check token scope (needs repo or public_repo)');
-      var mj=await meta.json();
+      // 1. get current SHA (required by GitHub API)
+      var metaRes=await fetch(API,{headers:{'Authorization':authHdr(token),'Accept':'application/vnd.github+json'}});
+      if(metaRes.status===401){lsSet(LS_TOKEN,'');alert('Token rejected (401 Unauthorized).\nCheck it has public_repo scope and hasn\'t expired.\nYou\'ll be asked to enter it again.');throw new Error('401');}
+      if(metaRes.status===403){alert('Permission denied (403).\nMake sure the token has public_repo scope.');throw new Error('403');}
+      if(!metaRes.ok){alert('Could not fetch file metadata: HTTP '+metaRes.status);throw new Error('meta '+metaRes.status);}
+      var mj=await metaRes.json();
       var sha=mj.sha;
-      lsSet(LS_SHA,sha);
-      // push
-      var content=btoa(unescape(encodeURIComponent(JSON.stringify(state,null,2))));
-      var res=await fetch(API,{
+
+      // 2. PUT updated content
+      var json=JSON.stringify(state,null,2);
+      var putRes=await fetch(API,{
         method:'PUT',
-        headers:{'Authorization':'token '+token,'Content-Type':'application/json','Accept':'application/vnd.github+json'},
-        body:JSON.stringify({message:'Update kanban '+new Date().toISOString().slice(0,16),content:content,sha:sha})
+        headers:{'Authorization':authHdr(token),'Content-Type':'application/json','Accept':'application/vnd.github+json'},
+        body:JSON.stringify({message:'kanban update '+new Date().toISOString().slice(0,16).replace('T',' '),content:toB64(json),sha:sha})
       });
-      if(!res.ok){var ej=await res.json();throw new Error(ej.message||res.status);}
-      status('Pushed ✓ · '+new Date().toLocaleTimeString());
-    }catch(e){status('Push failed: '+e.message,true);}
+      if(putRes.status===401){lsSet(LS_TOKEN,'');alert('Token rejected on write (401).\nPlease re-enter your token.');throw new Error('put 401');}
+      if(putRes.status===422){var ej422=await putRes.json();alert('GitHub rejected the update (422):\n'+ej422.message);throw new Error('422');}
+      if(!putRes.ok){var ejx=await putRes.json();alert('Push failed ('+putRes.status+'):\n'+(ejx.message||'unknown error'));throw new Error('put '+putRes.status);}
+      status('Pushed ✓  '+new Date().toLocaleTimeString());
+      console.log('Kanban pushed successfully');
+    }catch(e){
+      console.error('Push error',e);
+      if(e.message!=='401'&&e.message!=='403'&&e.message!=='422'&&!e.message.startsWith('put'))
+        status('Push failed — see console','err');
+      else
+        status('Push failed: '+e.message,'err');
+    }
   }
 
   // ── token modal ───────────────────────────────────────
@@ -564,23 +586,26 @@
     var existing=lsGet(LS_TOKEN)||'';
     var bg=document.createElement('div');bg.className='kb-modal-bg';
     bg.innerHTML='<div class="kb-modal">'
-      +'<h3>GitHub Personal Access Token</h3>'
-      +'<p>Needed to push changes to the shared repo file. Generate one at <a href="https://github.com/settings/tokens/new?scopes=public_repo&description=CandiHub+kanban" target="_blank">github.com/settings/tokens</a> with <b>public_repo</b> scope. Stored only in your browser.</p>'
-      +'<input id="kbTokInput" type="password" placeholder="ghp_…" value="'+esc(existing)+'">'
-      +'<div class="kb-modal-btns">'
-      +'<button class="kb-mok" id="kbTokSave">Save &amp; continue</button>'
+      +'<h3>🔑 Set up your GitHub token</h3>'
+      +'<p style="margin-bottom:10px">One-time setup per browser. Your token is stored <b>only in this browser</b>, never sent anywhere except GitHub.</p>'
+      +'<p style="margin-bottom:14px"><b>Step 1:</b> Open <a href="https://github.com/settings/tokens/new?scopes=public_repo&description=CandiHub+kanban" target="_blank">github.com/settings/tokens</a><br>'
+      +'<b>Step 2:</b> Select <code style="background:var(--card2);padding:1px 5px;border-radius:4px">public_repo</code> scope → Generate token<br>'
+      +'<b>Step 3:</b> Copy the <code>ghp_…</code> token and paste it below</p>'
+      +'<input id="kbTokInput" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" value="'+esc(existing)+'" autocomplete="off">'
+      +'<div class="kb-modal-btns" style="margin-top:4px">'
+      +'<button class="kb-mok" id="kbTokSave">Save &amp; Push</button>'
       +'<button class="kb-mcancel" id="kbTokCancel">Cancel</button>'
-      +(existing?'<button class="kb-mcancel" id="kbTokClear">Clear token</button>':'')
+      +(existing?'<button class="kb-mcancel" id="kbTokClear">Clear</button>':'')
       +'</div></div>';
     document.body.appendChild(bg);
     document.getElementById('kbTokSave').onclick=function(){
       var t=document.getElementById('kbTokInput').value.trim();
-      if(!t)return;
+      if(!t){alert('Please paste your GitHub token first.');return;}
       lsSet(LS_TOKEN,t);
       document.body.removeChild(bg);
       if(cb)cb();
     };
-    document.getElementById('kbTokCancel').onclick=function(){document.body.removeChild(bg);};
+    document.getElementById('kbTokCancel').onclick=function(){document.body.removeChild(bg);status('Push cancelled');};
     var clr=document.getElementById('kbTokClear');
     if(clr)clr.onclick=function(){lsSet(LS_TOKEN,'');document.body.removeChild(bg);status('Token cleared');};
     document.getElementById('kbTokInput').focus();
