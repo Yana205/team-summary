@@ -1,19 +1,67 @@
 {
   "done": [
-    {"id":"d1","title":"Reference screens in Miro","desc":"Cozy food-game UI + watercolor food art + night-market vibes, collected and clustered."},
-    {"id":"d2","title":"First character sketches","desc":"Puppy, cat and red panda in aprons — blue-pencil concepts on the board."},
-    {"id":"d3","title":"Roles drafted","desc":"Yana / Noa / Lital split agreed."}
+    {
+      "id": "d1",
+      "title": "Reference screens in Miro",
+      "desc": "Cozy food-game UI + watercolor food art + night-market vibes, collected and clustered."
+    },
+    {
+      "id": "d2",
+      "title": "First character sketches",
+      "desc": "Puppy, cat and red panda in aprons — blue-pencil concepts on the board."
+    },
+    {
+      "id": "d3",
+      "title": "Roles drafted",
+      "desc": "Yana / Noa / Lital split agreed."
+    }
   ],
   "doing": [
-    {"id":"di1","title":"Mechanic research","desc":"Pouring liquids, drawing with fingers, serving food — soft & slow, hand-drawn particles.","owner":"Yana"},
-    {"id":"di2","title":"Art direction","desc":"Hand-drawn + shiny, packages / ready-to-eat vibe · matcha latte x sakura theme.","owner":"Noa"},
-    {"id":"di3","title":"Cozy to stress environment bar","desc":"A vibe meter that shifts the environment from cozy to stressed — define how it reads on screen."}
+    {
+      "id": "di1",
+      "title": "Mechanic research",
+      "desc": "Pouring liquids, drawing with fingers, serving food — soft & slow, hand-drawn particles.",
+      "owner": "Yana"
+    },
+    {
+      "id": "di2",
+      "title": "Art direction",
+      "desc": "Hand-drawn + shiny, packages / ready-to-eat vibe · matcha latte x sakura theme.",
+      "owner": "Noa"
+    },
+    {
+      "id": "di3",
+      "title": "Cozy to stress environment bar",
+      "desc": "A vibe meter that shifts the environment from cozy to stressed — define how it reads on screen."
+    }
   ],
   "todo": [
-    {"id":"t1","title":"One pager","desc":"POV-driven, personality first — not Falafel King. Lead with the experience, not the genre."},
-    {"id":"t2","title":"Pitch","desc":"Build from the one pager: playable mechanic + one strong visual identity."},
-    {"id":"t3","title":"Fonts","desc":"Pick title + UI fonts, TextMesh Pro-ready.","owner":"Lital"},
-    {"id":"t4","title":"Talk to Lital + Hili","desc":"Sync on joining / roles."},
-    {"id":"t5","title":"Reach out to Tal Rozenberg","desc":"Advice on level design & mechanics — she is across our strongest references."}
+    {
+      "id": "t1",
+      "title": "One pager",
+      "desc": "POV-driven, personality first — not Falafel King. Lead with the experience, not the genre."
+    },
+    {
+      "id": "t2",
+      "title": "Pitch",
+      "desc": "Build from the one pager: playable mechanic + one strong visual identity."
+    },
+    {
+      "id": "t3",
+      "title": "Fonts",
+      "desc": "Pick title + UI fonts, TextMesh Pro-ready.",
+      "owner": "Noa"
+    },
+    {
+      "id": "t4",
+      "title": "Talk to Lital + Hili",
+      "desc": "Sync on joining / roles.",
+      "owner": "Lital"
+    },
+    {
+      "id": "t5",
+      "title": "Reach out to Tal Rozenberg",
+      "desc": "Advice on level design & mechanics — she is across our strongest references."
+    }
   ]
 }
